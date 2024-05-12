@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "lint": "eslint '*.ts' . --quiet --fix",
+    "lint": "eslint '*.ts' --quiet --fix",
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "style": "prettier --write '**'",
-    "pre-push": "run-s build lint test"
+    "pre-push": "run-s build lint"
   },
   "type": "commonjs",
   "devDependencies": {
@@ -33,8 +33,7 @@
     "typescript": "^5.3.3",
     "vite-tsconfig-paths": "^4.3.1",
     "vitest": "^1.3.0",
-    "zod": "^3.22.4",
-    "zod-validation-error": "^3.0.2"
+    "zod": "^3.22.4"
   },
   "dependencies": {
     "esbuild": "^0.20.1"

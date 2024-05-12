@@ -85,6 +85,12 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /
             Method: ANY
+        LibraryEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /library
+            Method: ANY
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref DynamoDBTable
@@ -103,11 +109,11 @@ Resources:
           - src/lambdas/api-handler.ts
         External:
           - zod
-          - zod-validation-error
           - dayjs
           - ksuid
           - fastify
           - "@fastify/aws-lambda"
+          - "@fastify/jwt"
           - "@aws-sdk/client-dynamodb"
 ##########################################################################
 #                                 Outputs                                #
