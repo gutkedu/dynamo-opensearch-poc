@@ -1,0 +1,22 @@
+meta {
+  name: fetch-books-by-library
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{url}}/book?libraryId=123
+  body: none
+  auth: none
+}
+
+query {
+  libraryId: 123
+}
+
+body:json {
+  {
+  "name":"Biblioteca Municipal",
+  "email":"biblioteca@gmail.com"
+  }
+}

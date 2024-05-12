@@ -2,22 +2,24 @@ import { Item } from './item'
 import { AttributeValue } from '@aws-sdk/client-dynamodb'
 import KSUID from 'ksuid'
 
-interface LibraryProps {
+interface BookProps {
   data: {
     id?: string
+    libraryId: string
     name: string
-    email: string
+    author: string
+    description: string
   }
   createdAt?: number
 }
 
-export class LibraryEntity extends Item<LibraryProps> {
+export class BookEntity extends Item<BookProps> {
   get pk(): string {
-    return `LIBRARY`
+    return `LIBRARY#${this.props.data.libraryId}#BOOK`
   }
 
   get sk(): string {
-    return `LIBRARY#${this.props.data.id}`
+    return `BOOK#${this.props.data.id}`
   }
 
   get rangeN1(): number {
@@ -28,16 +30,24 @@ export class LibraryEntity extends Item<LibraryProps> {
     return this.props.data.id ?? KSUID.randomSync().string
   }
 
+  get libraryId(): string {
+    return this.props.data.libraryId
+  }
+
   get name(): string {
     return this.props.data.name
   }
 
-  get email(): string {
-    return this.props.data.email
+  get author(): string {
+    return this.props.data.author
   }
 
   get createdAt(): number {
     return this.props.createdAt ?? Date.now()
+  }
+
+  get description(): string {
+    return this.props.data.description
   }
 
   getDynamoKeys(): Record<string, AttributeValue> {
@@ -56,24 +66,23 @@ export class LibraryEntity extends Item<LibraryProps> {
     }
   }
 
-  static fromDynamoItem(item: Record<string, AttributeValue>): LibraryEntity {
+  static fromDynamoItem(item: Record<string, AttributeValue>): BookEntity {
     const { data, createdAt } = item
 
-    return new LibraryEntity({
+    return new BookEntity({
       data: JSON.parse(data.S ?? '{}'),
       createdAt: Number(createdAt.N) ?? Date.now()
     })
   }
 
-  static create(props: LibraryProps): LibraryEntity {
-    const library = new LibraryEntity({
+  static create(props: BookProps): BookEntity {
+    const Book = new BookEntity({
       data: {
-        id: props.data.id ?? KSUID.randomSync().string,
-        name: props.data.name,
-        email: props.data.email
+        ...props.data,
+        id: props.data.id ?? KSUID.randomSync().string
       },
       createdAt: Date.now()
     })
-    return library
+    return Book
   }
 }

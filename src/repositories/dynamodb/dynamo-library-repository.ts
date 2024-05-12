@@ -1,4 +1,4 @@
-import { DynamoDBClient, PutItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
+import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
 import { LibraryRepository } from '../library-repository'
 import { LibraryEntity } from '@/core/library'
 import { IntegrationError } from '@/shared/integration-error'
@@ -33,6 +33,7 @@ export class DynamoLibraryRepository implements LibraryRepository {
     try {
       const command = new QueryCommand({
         TableName: this.tableName,
+        IndexName: 'LSI1',
         KeyConditionExpression: 'PK = :pk',
         ExpressionAttributeValues: {
           ':pk': { S: 'LIBRARY' }
@@ -47,6 +48,27 @@ export class DynamoLibraryRepository implements LibraryRepository {
     } catch (error) {
       console.error(error)
       throw new IntegrationError('Error fetching libraries')
+    }
+  }
+
+  async findById(libraryId: string): Promise<LibraryEntity | null> {
+    try {
+      const command = new GetItemCommand({
+        TableName: this.tableName,
+        Key: {
+          PK: { S: 'LIBRARY' },
+          SK: { S: `LIBRARY#${libraryId}` }
+        }
+      })
+
+      const { Item } = await this.client.send(command)
+
+      if (!Item) return null
+
+      return LibraryEntity.fromDynamoItem(Item)
+    } catch (error) {
+      console.error(error)
+      throw new IntegrationError('Error finding library')
     }
   }
 }

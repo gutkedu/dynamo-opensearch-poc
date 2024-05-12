@@ -1,0 +1,20 @@
+meta {
+  name: create-book
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{url}}/book
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "libraryId": "",
+    "name": "Biblioteca Municipal",
+    "author": "",
+    "description": ""
+  }
+}

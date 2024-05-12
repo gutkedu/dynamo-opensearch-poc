@@ -33,6 +33,18 @@ Resources:
           AttributeType: S
         - AttributeName: SK
           AttributeType: S
+        - AttributeName: rangeN1
+          AttributeType: N
+      LocalSecondaryIndexes:
+        - IndexName: LSI1
+          KeySchema:
+            - AttributeName: PK
+              KeyType: HASH
+            - AttributeName: rangeN1
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+            
 
   ##########################################################################
   #                             OpenSearch Cluster                         #
@@ -90,6 +102,12 @@ Resources:
           Properties:
             RestApiId: !Ref ApiGateway
             Path: /library
+            Method: ANY
+        BookEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /book
             Method: ANY
       Policies:
         - DynamoDBCrudPolicy:

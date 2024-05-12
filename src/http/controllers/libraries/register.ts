@@ -1,4 +1,3 @@
-import { LibraryAlreadyExistsError } from '@/use-cases/errors/library-already-exists-error'
 import { makeRegisterLibraryUseCase } from '@/use-cases/factories/make-register-library'
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
@@ -23,11 +22,6 @@ export async function registerLibraryController(request: FastifyRequest, reply: 
       library
     })
   } catch (err) {
-    if (err instanceof LibraryAlreadyExistsError) {
-      return reply.status(409).send({
-        message: err.message
-      })
-    }
     throw err
   }
 }
