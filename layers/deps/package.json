@@ -1,0 +1,20 @@
+{
+  "name": "nodejs",
+  "version": "1.0.0",
+  "description": "Layer for lambda dependencies",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dayjs": "^1.11.10",
+    "zod": "^3.22.4",
+    "zod-validation-error": "^1.5.0",
+    "ksuid": "3.0.0",   
+    "@fastify/aws-lambda": "^4.0.0",   
+    "fastify": "^4.27.0"
+  }
+}
