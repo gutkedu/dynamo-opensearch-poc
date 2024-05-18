@@ -1,12 +1,12 @@
 meta {
-  name: fetch-libraries
+  name: fetch-all-books
   type: http
-  seq: 3
+  seq: 6
 }
 
 get {
-  url: {{url}}/library
-  body: none
+  url: {{url}}/book/all
+  body: json
   auth: none
 }
 

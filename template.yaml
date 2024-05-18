@@ -2,6 +2,12 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: POC for dynamo and open search integration
 
+Parameters:
+  DomainName:
+    Type: String
+    Description: A name for the Amazon OpenSearch domain
+    Default: my-open-search-domain
+
 Globals:
   Function:
     Timeout: 3
@@ -44,15 +50,47 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
             
-
   ##########################################################################
   #                             OpenSearch Cluster                         #
   ##########################################################################
-#  OpenSearchDomain:
-#    Type: AWS::OpenSearchService::Domain
-#    Properties:
-#      DomainName: open-search-domain
+  OpenSearchServiceDomain:
+    Type: AWS::OpenSearchService::Domain
+    Properties: 
+      DomainName: !Ref DomainName
+      EngineVersion: 'OpenSearch_2.11'
+      ClusterConfig:
+        DedicatedMasterEnabled: false
+        InstanceCount: 1
+        ZoneAwarenessEnabled: false
+        InstanceType: 't3.small.search'
+      EBSOptions:
+        EBSEnabled: true
+        VolumeSize: 10
+        VolumeType: 'gp2'
+      AccessPolicies:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: 
+            AWS: '*'
+          Action:
+          - 'es:ESHttpGet'
+          - 'es:ESHttpPut'
+          - 'es:ESHttpPost'
+          Resource: !Sub 'arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${DomainName}/*'
+          Condition:
+            IpAddress:
+              aws:SourceIp:
+                - "189.30.72.27/32"
+      EncryptionAtRestOptions:
+        Enabled: false
+      NodeToNodeEncryptionOptions:
+        Enabled: false
+      DomainEndpointOptions:
+        EnforceHTTPS: true
 
   ##########################################################################
   #                              REST API Gateway                          #
@@ -109,14 +147,26 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /book
             Method: ANY
+        AllBooksEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /book/all
+            Method: GET
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref DynamoDBTable
         - AWSLambdaExecute
+        - Statement:
+            - Effect: Allow
+              Action:
+                - "es:*"
+              Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${DomainName}/*"
       Environment:
         Variables:
           NODE_OPTIONS: --enable-source-maps
           DYNAMO_TABLE: !Ref DynamoDBTable
+          OPEN_SEARCH_DOMAIN_URL: !GetAtt OpenSearchServiceDomain.DomainEndpoint
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -124,7 +174,7 @@ Resources:
         Target: es2022
         Sourcemap: true
         EntryPoints:
-          - src/lambdas/api-handler.ts
+          - src/infra/lambdas/api-handler.ts
         External:
           - zod
           - dayjs
@@ -133,6 +183,52 @@ Resources:
           - "@fastify/aws-lambda"
           - "@fastify/jwt"
           - "@aws-sdk/client-dynamodb"
+          - "@opensearch-project/opensearch"
+          - "@aws-sdk/credential-provider-node"
+  StreamBookLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: stream-book-lambda
+      Handler: stream-book-handler.streamBookHandler
+      Layers:
+        - !Ref DepsLayer
+      Events:
+        StreamEvent:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt DynamoDBTable.StreamArn
+            BatchSize: 10
+            StartingPosition: TRIM_HORIZON
+            FilterCriteria:
+              Filters:
+                - Pattern: '{"eventName": ["INSERT"], "dynamodb": {"Keys": {"PK": { "S": [{ "prefix": "LIBRARY" }] },"SK": { "S": [{ "prefix": "BOOK" }] }}}}'
+      Policies:
+        - AWSLambdaExecute
+        - Statement:
+            - Effect: Allow
+              Action:
+                - "es:*"
+              Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${DomainName}/*"
+      Environment:
+        Variables:
+          NODE_OPTIONS: --enable-source-maps
+          DYNAMO_TABLE: !Ref DynamoDBTable
+          OPEN_SEARCH_DOMAIN_URL: !GetAtt OpenSearchServiceDomain.DomainEndpoint
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        EntryPoints:
+          - src/infra/lambdas/stream-book-handler.ts
+        External:
+          - "@opensearch-project/opensearch"
+          - "@aws-sdk/client-dynamodb"
+          - "@aws-sdk/credential-provider-node"
+          - zod
+          - dayjs
+          - ksuid
 ##########################################################################
 #                                 Outputs                                #
 ##########################################################################
@@ -142,3 +238,5 @@ Outputs:
   ApiEndpoint:
     Description: API Endpoint
     Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/dev"
+  OpenSearchDomainEndpoint:
+    Value: !GetAtt OpenSearchServiceDomain.DomainEndpoint

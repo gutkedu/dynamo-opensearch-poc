@@ -11,9 +11,9 @@ export async function fetchBooksController(request: FastifyRequest, reply: Fasti
   const { libraryId } = schema.parse(request.query)
 
   try {
-    const registerUseCase = makeFetchLibBooksUseCase()
+    const useCase = makeFetchLibBooksUseCase()
 
-    const { books } = await registerUseCase.execute({
+    const { books } = await useCase.execute({
       libraryId
     })
 
