@@ -5,9 +5,15 @@ meta {
 }
 
 get {
-  url: {{url}}/book/all
-  body: json
+  url: {{url}}/book/all?description=conan
+  body: none
   auth: none
+}
+
+query {
+  description: conan
+  ~author: Edu
+  ~name: seis
 }
 
 body:json {

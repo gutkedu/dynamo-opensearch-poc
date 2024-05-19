@@ -7,9 +7,9 @@ const useCase = makeSaveBookUseCase()
 
 export async function streamBookHandler(event: DynamoDBStreamEvent, context: Context) {
   for (const record of event.Records) {
-    const book = BookEntity.fromDynamoItem(record.dynamodb?.NewImage as Record<string, AttributeValue>)
+    const bookProps = BookEntity.fromDynamoToProps(record.dynamodb?.NewImage as Record<string, AttributeValue>)
     await useCase.execute({
-      book
+      bookProps
     })
   }
   return `Successfully processed ${event.Records.length} records.`

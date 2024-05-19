@@ -2,7 +2,7 @@ import { Item } from './item'
 import { AttributeValue } from '@aws-sdk/client-dynamodb'
 import KSUID from 'ksuid'
 
-interface BookProps {
+export interface BookProps {
   data: {
     id?: string
     libraryId: string
@@ -73,6 +73,19 @@ export class BookEntity extends Item<BookProps> {
       data: JSON.parse(data.S ?? '{}'),
       createdAt: Number(createdAt.N) ?? Date.now()
     })
+  }
+
+  static fromDynamoToProps(item: Record<string, AttributeValue>): BookProps {
+    const { data, createdAt } = item
+
+    return {
+      data: JSON.parse(data.S ?? '{}'),
+      createdAt: Number(createdAt.N) ?? Date.now()
+    }
+  }
+
+  static fromProps(props: BookProps): BookEntity {
+    return new BookEntity(props)
   }
 
   static create(props: BookProps): BookEntity {

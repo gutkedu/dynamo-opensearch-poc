@@ -1,7 +1,7 @@
-import { BookEntity } from '@/core/book'
+import { BookEntity, BookProps } from '@/core/book'
 import { QueryBooksSearchParams } from './dtos/opensearch-provider-dtos'
 
 export interface SearchEngineProvider {
-  saveNewBook(data: BookEntity): Promise<void>
-  queryBooks(payload: QueryBooksSearchParams): Promise<any>
+  saveNewBook(data: BookProps): Promise<void>
+  queryBooks(payload: QueryBooksSearchParams): Promise<BookEntity[]>
 }

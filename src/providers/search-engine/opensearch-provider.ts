@@ -1,10 +1,11 @@
-import { BookEntity } from '@/core/book'
 import { SearchEngineProvider } from './search-engine-provider'
 import { Client } from '@opensearch-project/opensearch'
 import { defaultProvider } from '@aws-sdk/credential-provider-node'
 import { AwsSigv4Signer } from '@opensearch-project/opensearch/aws'
 import { IntegrationError } from '@/shared/integration-error'
-import { QueryBooksSearchParams } from './dtos/opensearch-provider-dtos'
+import { OpenSearchResponse, QueryBooksSearchParams } from './dtos/opensearch-provider-dtos'
+import { OpenSearchIndexEnum } from './indexes/opensearch-index-enum'
+import { BookEntity, BookProps } from '@/core/book'
 
 export class OpenSearchSearchEngineProvider implements SearchEngineProvider {
   private client: Client
@@ -27,15 +28,13 @@ export class OpenSearchSearchEngineProvider implements SearchEngineProvider {
     })
   }
 
-  async saveNewBook(data: BookEntity): Promise<void> {
+  async saveNewBook(props: BookProps): Promise<void> {
     try {
       await this.client.index({
-        index: 'books',
+        id: props.data.id,
+        index: OpenSearchIndexEnum.BOOKS,
         body: {
-          id: data.id,
-          libraryId: data.libraryId,
-          name: data.name,
-          description: data.description
+          ...props
         }
       })
     } catch (error) {
@@ -43,23 +42,30 @@ export class OpenSearchSearchEngineProvider implements SearchEngineProvider {
     }
   }
 
-  async queryBooks({ author, description, name }: QueryBooksSearchParams): Promise<any> {
+  async queryBooks({ author, description, name }: QueryBooksSearchParams): Promise<BookEntity[]> {
     try {
-      const { body } = await this.client.search({
-        index: 'books',
+      const { body } = await this.client.search<OpenSearchResponse<BookProps>>({
+        index: OpenSearchIndexEnum.BOOKS,
         body: {
           query: {
             bool: {
               must: [
-                name ? { match: { name } } : undefined,
-                author ? { match: { author } } : undefined,
-                description ? { match: { description } } : undefined
+                name ? { match: { 'data.name': name } } : undefined,
+                author ? { match: { 'data.author': author } } : undefined,
+                description ? { match: { 'data.description': description } } : undefined
               ].filter(Boolean)
             }
           }
         }
       })
-      return body
+
+      console.log(JSON.stringify(body, null, 2))
+
+      if (!body.hits.hits.length) {
+        return []
+      }
+
+      return body.hits.hits.map((hit) => BookEntity.fromProps(hit._source))
     } catch (error) {
       throw new IntegrationError('Error querying books index')
     }

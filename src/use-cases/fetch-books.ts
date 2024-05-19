@@ -7,7 +7,13 @@ interface FetchBooksRequest {
 }
 
 interface FetchBooksResponse {
-  books: any
+  books: {
+    id: string
+    libraryId: string
+    name: string
+    author: string
+    description: string
+  }[]
 }
 
 export class FetchBooksUseCase {
@@ -21,7 +27,13 @@ export class FetchBooksUseCase {
     })
 
     return {
-      books: response
+      books: response.map((b) => ({
+        id: b.id,
+        libraryId: b.libraryId,
+        name: b.name,
+        author: b.author,
+        description: b.description
+      }))
     }
   }
 }
